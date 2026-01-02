@@ -2,6 +2,7 @@ import os
 import mongoengine
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -78,7 +79,10 @@ MONGO_DATABASE = os.getenv('MONGO_DATABASE', 'search_client_db')
 MONGO_HOST = os.getenv('MONGO_HOST', 'mongodb')
 MONGO_PORT = int(os.getenv('MONGO_PORT', 27017))
 
-MONGODB_URI = f"mongodb://{MONGO_ROOT_USERNAME}:{MONGO_ROOT_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DATABASE}?authSource=admin"
+MONGODB_USERNAME_ENCODED = quote_plus(MONGO_ROOT_USERNAME)
+MONGODB_PASSWORD_ENCODED = quote_plus(MONGO_ROOT_PASSWORD)
+
+MONGODB_URI = f"mongodb://{MONGODB_USERNAME_ENCODED}:{MONGODB_PASSWORD_ENCODED}@{MONGO_HOST}:{MONGO_PORT}/{MONGO_DATABASE}?authSource=admin"
 
 mongoengine.connect(
     db=MONGO_DATABASE,
