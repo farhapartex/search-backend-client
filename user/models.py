@@ -1,4 +1,4 @@
-from mongoengine import Document, StringField, BooleanField, EmailField, DateTimeField
+from mongoengine import Document, StringField, BooleanField, EmailField, DateTimeField, ReferenceField
 from datetime import datetime
 
 
@@ -15,6 +15,25 @@ class User(Document):
         'indexes': [
             'email',
             'is_active',
+            '-created_at'
+        ]
+    }
+
+
+class UserActivation(Document):
+    user = ReferenceField(User, required=True)
+    code = StringField(required=True, max_length=6)
+    expiry = DateTimeField(required=True)
+    is_used = BooleanField(default=False)
+    created_at = DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        'collection': 'user_activations',
+        'indexes': [
+            'user',
+            'code',
+            'expiry',
+            'is_used',
             '-created_at'
         ]
     }

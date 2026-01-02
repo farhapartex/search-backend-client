@@ -1,6 +1,4 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password, check_password
-from user.models import User
 
 
 class SignupSerializer(serializers.Serializer):
@@ -9,6 +7,11 @@ class SignupSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, min_length=8, write_only=True)
     confirm_password = serializers.CharField(required=True, min_length=8, write_only=True)
 
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match"})
+        return data
+
 
 
 class SigninSerializer(serializers.Serializer):
@@ -16,19 +19,6 @@ class SigninSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, write_only=True)
 
 
-
-class UserSerializer(serializers.Serializer):
-    id = serializers.CharField(read_only=True)
-    email = serializers.EmailField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    is_active = serializers.BooleanField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True)
-
-    def to_representation(self, instance):
-        return {
-            'id': str(instance.id),
-            'email': instance.email,
-            'name': instance.name,
-            'is_active': instance.is_active,
-            'created_at': instance.created_at.isoformat() if instance.created_at else None
-        }
+class ActivateUserSerializer(serializers.Serializer):
+    user_id = serializers.CharField(required=True)
+    code = serializers.CharField(required=True, max_length=6, min_length=6)

@@ -6,8 +6,9 @@ class UserConfig(AppConfig):
     name = 'user'
 
     def ready(self):
-        from user.models import User
+        from user.models import User, UserActivation
         try:
             User.ensure_indexes()
+            UserActivation.ensure_indexes()
         except Exception as e:
             pass
