@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from engine.serializers import SearchRequestSerializer
 from engine.services import SearchService
 from engine.result import ServiceResult
+from engine.exceptions import SearchServiceException
 from user.authentication import JWTAuthentication
 
 
@@ -26,9 +27,9 @@ class SearchView(APIView):
                 query=serializer.validated_data['query'],
                 max_results=serializer.validated_data.get('max_results', 20)
             )
-            result = ServiceResult.ok(data=data, message="Search completed")
+            result = ServiceResult.ok(data=data, message="Search completed successfully")
             return Response(result.to_dict(), status=status.HTTP_200_OK)
 
-        except Exception as e:
+        except SearchServiceException as e:
             result = ServiceResult.fail(message=str(e))
             return Response(result.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
