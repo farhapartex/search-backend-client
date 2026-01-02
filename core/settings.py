@@ -151,7 +151,6 @@ CACHES = {
                 'retry_on_timeout': True,
             },
             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-            'PARSER_CLASS': 'redis.connection.HiredisParser',
         },
         'KEY_PREFIX': 'search_client',
         'TIMEOUT': 300,
