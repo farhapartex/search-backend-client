@@ -1,5 +1,7 @@
 asgiref==3.11.0
 async-timeout==5.0.1
+cffi==2.0.0
+cryptography==46.0.3
 Django==5.2.9
 django-cors-headers==4.9.0
 django-redis==6.0.0
@@ -11,6 +13,8 @@ gunicorn==23.0.0
 mongoengine==0.29.1
 packaging==25.0
 protobuf==6.33.2
+pycparser==2.23
+PyJWT==2.10.1
 pymongo==4.15.5
 python-decouple==3.8
 python-dotenv==1.2.1

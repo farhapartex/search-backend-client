@@ -1,6 +1,7 @@
 from django.contrib.auth.hashers import make_password, check_password
 from user.repositories import UserRepository
 from user.services.activation_service import ActivationService
+from user.services.jwt_service import JwtService
 from user.exceptions import (
     UserAlreadyExistsException,
     InvalidCredentialsException,
@@ -10,9 +11,10 @@ from user.exceptions import (
 
 class UserService:
 
-    def __init__(self, user_repository=None, activation_service=None):
+    def __init__(self, user_repository=None, activation_service=None, jwt_service=None):
         self.user_repository = user_repository or UserRepository()
         self.activation_service = activation_service or ActivationService()
+        self.jwt_service = jwt_service or JwtService()
 
     def create_user(self, email, name, password):
         if self.user_repository.exists_by_email(email):
@@ -49,6 +51,27 @@ class UserService:
             'email': user.email,
             'name': user.name,
             'is_active': user.is_active
+        }
+
+    def signin_user(self, email, password):
+        user = self.user_repository.find_by_email(email)
+
+        if not user:
+            raise InvalidCredentialsException("Invalid email or password")
+
+        if not check_password(password, user.password):
+            raise InvalidCredentialsException("Invalid email or password")
+
+        if not user.is_active:
+            raise AccountNotActiveException("Account is not active")
+
+        access_token = self.jwt_service.generate_access_token(
+            user_id=str(user.id),
+            email=user.email
+        )
+
+        return {
+            'access_token': access_token
         }
 
     def activate_user(self, user_id, code):

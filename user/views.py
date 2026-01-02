@@ -49,11 +49,11 @@ class SigninView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            data = self.user_service.authenticate_user(
+            data = self.user_service.signin_user(
                 email=serializer.validated_data['email'],
                 password=serializer.validated_data['password']
             )
-            result = ServiceResult.ok(data=data, message="Authentication successful")
+            result = ServiceResult.ok(data=data, message="Signin successful")
             return Response(result.to_dict(), status=status.HTTP_200_OK)
 
         except InvalidCredentialsException as e:
