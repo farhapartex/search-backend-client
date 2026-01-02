@@ -19,6 +19,14 @@ class User(Document):
         ]
     }
 
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
 
 class UserActivation(Document):
     user = ReferenceField(User, required=True)
