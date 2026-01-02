@@ -1,149 +1,87 @@
 from django.contrib.auth.hashers import make_password, check_password
-from user.models import User
+from user.repositories import UserRepository
 from user.services.activation_service import ActivationService
-from datetime import datetime
+from user.exceptions import (
+    UserAlreadyExistsException,
+    InvalidCredentialsException,
+    AccountNotActiveException
+)
 
 
 class UserService:
 
-    @staticmethod
-    def create_user(email, name, password):
-        email = email.lower()
+    def __init__(self, user_repository=None, activation_service=None):
+        self.user_repository = user_repository or UserRepository()
+        self.activation_service = activation_service or ActivationService()
 
-        if User.objects(email=email).first():
-            return {
-                'success': False,
-                'message': 'User with this email already exists'
-            }
+    def create_user(self, email, name, password):
+        if self.user_repository.exists_by_email(email):
+            raise UserAlreadyExistsException("User with this email already exists")
 
         hashed_password = make_password(password)
+        user = self.user_repository.create(email, name, hashed_password)
 
-        user = User(
-            email=email,
-            name=name,
-            password=hashed_password,
-            is_active=False
-        )
-        user.save()
-
-        activation_result = ActivationService.create_activation(user)
+        activation_data = self.activation_service.create_activation(user)
 
         return {
-            'success': True,
-            'message': 'User created successfully',
-            'data': {
-                'user_id': str(user.id),
-                'email': user.email,
-                'name': user.name,
-                'is_active': user.is_active,
-                'activation_code': activation_result['data']['code'],
-                'activation_expiry': activation_result['data']['expiry']
-            }
+            'user_id': str(user.id),
+            'email': user.email,
+            'name': user.name,
+            'is_active': user.is_active,
+            'activation_code': activation_data['code'],
+            'activation_expiry': activation_data['expiry']
         }
 
-    @staticmethod
-    def authenticate_user(email, password):
-        email = email.lower()
-
-        user = User.objects(email=email).first()
+    def authenticate_user(self, email, password):
+        user = self.user_repository.find_by_email(email)
 
         if not user:
-            return {
-                'success': False,
-                'message': 'Invalid email or password'
-            }
+            raise InvalidCredentialsException("Invalid email or password")
 
         if not check_password(password, user.password):
-            return {
-                'success': False,
-                'message': 'Invalid email or password'
-            }
+            raise InvalidCredentialsException("Invalid email or password")
 
         if not user.is_active:
-            return {
-                'success': False,
-                'message': 'Account is not active'
-            }
+            raise AccountNotActiveException("Account is not active")
 
         return {
-            'success': True,
-            'message': 'Authentication successful',
-            'data': {
-                'user_id': str(user.id),
-                'email': user.email,
-                'name': user.name,
-                'is_active': user.is_active
-            }
+            'user_id': str(user.id),
+            'email': user.email,
+            'name': user.name,
+            'is_active': user.is_active
         }
 
-    @staticmethod
-    def activate_user(user_id, code):
-        user = User.objects(id=user_id).first()
+    def activate_user(self, user_id, code):
+        user = self.user_repository.get_by_id_or_fail(user_id)
 
-        if not user:
-            return {
-                'success': False,
-                'message': 'User not found'
-            }
+        self.activation_service.verify_code(user, code)
 
-        verification_result = ActivationService.verify_code(user, code)
-
-        if not verification_result['success']:
-            return verification_result
-
-        user.is_active = True
-        user.updated_at = datetime.utcnow()
-        user.save()
+        user = self.user_repository.activate(user)
 
         return {
-            'success': True,
-            'message': 'User activated successfully',
-            'data': {
-                'user_id': str(user.id),
-                'email': user.email,
-                'is_active': user.is_active
-            }
+            'user_id': str(user.id),
+            'email': user.email,
+            'is_active': user.is_active
         }
 
-    @staticmethod
-    def get_user_by_id(user_id):
-        user = User.objects(id=user_id).first()
-
-        if not user:
-            return {
-                'success': False,
-                'message': 'User not found'
-            }
+    def get_user_by_id(self, user_id):
+        user = self.user_repository.get_by_id_or_fail(user_id)
 
         return {
-            'success': True,
-            'data': {
-                'user_id': str(user.id),
-                'email': user.email,
-                'name': user.name,
-                'is_active': user.is_active,
-                'created_at': user.created_at.isoformat()
-            }
+            'user_id': str(user.id),
+            'email': user.email,
+            'name': user.name,
+            'is_active': user.is_active,
+            'created_at': user.created_at.isoformat()
         }
 
-    @staticmethod
-    def get_user_by_email(email):
-        email = email.lower()
-        user = User.objects(email=email).first()
-
-        if not user:
-            return {
-                'success': False,
-                'message': 'User not found'
-            }
+    def get_user_by_email(self, email):
+        user = self.user_repository.get_by_email_or_fail(email)
 
         return {
-            'success': True,
-            'data': {
-                'user_id': str(user.id),
-                'email': user.email,
-                'name': user.name,
-                'is_active': user.is_active,
-                'created_at': user.created_at.isoformat()
-            }
+            'user_id': str(user.id),
+            'email': user.email,
+            'name': user.name,
+            'is_active': user.is_active,
+            'created_at': user.created_at.isoformat()
         }
