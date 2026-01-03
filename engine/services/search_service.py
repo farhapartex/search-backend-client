@@ -40,3 +40,20 @@ class SearchService:
             'max_results': search_history.max_results,
             'created_at': search_history.created_at.isoformat()
         }
+
+    def get_user_search_history(self, user, limit=50):
+        histories = self.search_history_repository.find_by_user(user, limit)
+
+        return {
+            'histories': [
+                {
+                    'history_id': str(h.id),
+                    'platforms': h.platforms,
+                    'query': h.query,
+                    'max_results': h.max_results,
+                    'created_at': h.created_at.isoformat()
+                }
+                for h in histories
+            ],
+            'total': len(histories)
+        }

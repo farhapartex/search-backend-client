@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from engine.serializers import SearchRequestSerializer
+from engine.serializers import SearchRequestSerializer, SearchHistoryQuerySerializer
 from engine.services import SearchService
 from engine.result import ServiceResult
 from engine.exceptions import SearchServiceException
@@ -11,7 +11,6 @@ from user.authentication import JWTAuthentication
 
 class SearchView(APIView):
     authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -44,5 +43,32 @@ class SearchView(APIView):
             return Response(result.to_dict(), status=status.HTTP_200_OK)
 
         except SearchServiceException as e:
+            result = ServiceResult.fail(message=str(e))
+            return Response(result.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SearchHistoryView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.search_service = SearchService()
+
+    def get(self, request):
+        serializer = SearchHistoryQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        limit = serializer.validated_data.get('limit', 50)
+
+        try:
+            data = self.search_service.get_user_search_history(
+                user=request.user,
+                limit=limit
+            )
+            result = ServiceResult.ok(data=data, message="Search history retrieved successfully")
+            return Response(result.to_dict(), status=status.HTTP_200_OK)
+
+        except Exception as e:
             result = ServiceResult.fail(message=str(e))
             return Response(result.to_dict(), status=status.HTTP_500_INTERNAL_SERVER_ERROR)

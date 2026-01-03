@@ -10,7 +10,7 @@ class SearchRequestSerializer(serializers.Serializer):
     query = serializers.CharField(required=True, max_length=500, min_length=1)
     max_results = serializers.IntegerField(required=False, default=20, min_value=1, max_value=100)
 
-    def validate_platform(self, value):
+    def validate_platforms(self, value):
         allowed_platforms = ['github', 'stackoverflow', 'reddit']
         for platform in value:
             if platform.lower() not in allowed_platforms:
@@ -23,3 +23,7 @@ class SearchRequestSerializer(serializers.Serializer):
         if not value.strip():
             raise serializers.ValidationError("Query cannot be empty or whitespace only")
         return value.strip()
+
+
+class SearchHistoryQuerySerializer(serializers.Serializer):
+    limit = serializers.IntegerField(required=False, default=50, min_value=1, max_value=100)
