@@ -11,7 +11,7 @@ from user.authentication import JWTAuthentication
 
 class SearchView(APIView):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -21,12 +21,25 @@ class SearchView(APIView):
         serializer = SearchRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        platforms = serializer.validated_data['platforms']
+        query = serializer.validated_data['query']
+        max_results = serializer.validated_data.get('max_results', 20)
+
         try:
             data = self.search_service.search(
-                platforms=serializer.validated_data['platforms'],
-                query=serializer.validated_data['query'],
-                max_results=serializer.validated_data.get('max_results', 20)
+                platforms=platforms,
+                query=query,
+                max_results=max_results
             )
+
+            if request.user and request.user.is_authenticated:
+                self.search_service.save_search_history(
+                    user=request.user,
+                    platforms=platforms,
+                    query=query,
+                    max_results=max_results
+                )
+
             result = ServiceResult.ok(data=data, message="Search completed successfully")
             return Response(result.to_dict(), status=status.HTTP_200_OK)
 

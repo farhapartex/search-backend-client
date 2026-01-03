@@ -6,4 +6,8 @@ class EngineConfig(AppConfig):
     name = 'engine'
 
     def ready(self):
-        pass
+        from engine.models import SearchHistory
+        try:
+            SearchHistory.ensure_indexes()
+        except Exception as e:
+            pass
